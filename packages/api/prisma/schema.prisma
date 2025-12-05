@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Admin {
+  id       Int    @id @default(autoincrement())
+  username String @unique
+  password String
+}
+
+model User {
+  id         Int    @id @default(autoincrement())
+  username   String @unique
+  password   String
+  level      Int    @default(1)
+  experience Int    @default(0)
+}
+
+model Activity {
+  id        Int      @id @default(autoincrement())
+  name      String
+  config    String   // Storing JSON as string for SQLite compatibility
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

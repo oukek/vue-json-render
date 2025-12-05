@@ -1,0 +1,15 @@
+{
+  "name": "vue-json-render-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel --filter api --filter render --filter workbench dev",
+    "dev:api": "pnpm --filter api dev",
+    "dev:render": "pnpm --filter render dev",
+    "dev:workbench": "pnpm --filter workbench dev",
+    "build": "pnpm -r build"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
