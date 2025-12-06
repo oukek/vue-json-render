@@ -71,7 +71,11 @@ export class DataCenter {
     // Detect mode
     try {
       if (typeof window !== 'undefined' && window.self !== window.top) {
-        this.state.mode = 'preview';
+        const searchParams = new URLSearchParams(window.location.search);
+        // If explicitly embedded (e.g. PC view), do not switch to preview mode
+        if (!searchParams.has('embedded')) {
+          this.state.mode = 'preview';
+        }
       }
     } catch (e) {
       // Ignore cross-origin errors

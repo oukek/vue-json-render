@@ -1,12 +1,44 @@
 <script setup lang="ts">
-import { provide } from 'vue';
+import { provide, ref, onMounted, onUnmounted } from 'vue';
 import { dataCenter } from '@vue-json-render/shared';
 
 provide('GlobalState', dataCenter.state);
+
+const isPC = ref(false);
+// Check if currently running inside an iframe
+const isIframe = window.self !== window.top;
+
+const checkPC = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isMobile = /iphone|ipad|ipod|android/.test(userAgent);
+  const isLargeScreen = window.innerWidth > 768;
+  // Consider it PC if it's a large screen and not a mobile device
+  isPC.value = !isMobile && isLargeScreen;
+};
+
+onMounted(() => {
+  checkPC();
+  window.addEventListener('resize', checkPC);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkPC);
+});
+
+const getIframeSrc = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('embedded', 'true');
+    return url.toString();
+};
 </script>
 
 <template>
-  <div class="app-container">
+  <div v-if="isPC && !isIframe" class="pc-wrapper">
+    <div class="mobile-container">
+        <iframe :src="getIframeSrc()" class="app-iframe"></iframe>
+    </div>
+  </div>
+  <div v-else class="app-container">
     <router-view v-slot="{ Component }">
       <transition name="fade" mode="out-in">
         <component :is="Component" />
@@ -47,6 +79,35 @@ body {
   background-color: var(--bg-color);
   position: relative;
   overflow-x: hidden;
+}
+
+/* PC Wrapper Styles */
+.pc-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #e0e5ec;
+    width: 100%;
+}
+
+.mobile-container {
+    width: 375px;
+    height: 85vh;
+    max-height: 812px;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.15);
+    background: white;
+    border: 8px solid #1c1c1e;
+}
+
+.app-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+    background: #fff;
 }
 
 /* Common Mobile Components */
@@ -99,7 +160,7 @@ input:focus {
 button.btn-primary {
   width: 100%;
   padding: 14px;
-  background-color: var(--primary-color);
+  background: var(--primary-color);
   color: white;
   border: none;
   border-radius: var(--border-radius);
@@ -113,22 +174,10 @@ button.btn-primary:active {
   opacity: 0.8;
 }
 
-button.btn-secondary {
-    width: 100%;
-    padding: 14px;
-    background-color: transparent;
-    color: var(--primary-color);
-    border: 1px solid var(--primary-color);
-    border-radius: var(--border-radius);
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 10px;
-}
-
+/* Transitions */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity 0.3s ease;
 }
 
 .fade-enter-from,
