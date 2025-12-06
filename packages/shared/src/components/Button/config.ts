@@ -5,8 +5,9 @@ export interface ButtonProps {
   textColor: string;
   fontSize: string;
   borderRadius?: string;
-  actionType: 'link' | 'submit' | 'none';
+  actionType: 'link' | 'submit' | 'openModal' | 'none';
   actionUrl?: string;
+  modalId?: string;
 }
 
 export const defaultBaseConfig: BaseConfig = {

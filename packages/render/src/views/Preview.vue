@@ -12,15 +12,28 @@
     <div v-else class="empty-state">
       等待配置...
     </div>
+
+    <ModalRenderer 
+        v-if="activeModal"
+        :config="activeModal"
+        :selectedId="selectedId"
+        @select="selectComponent"
+        @close="closeModal"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue';
-import { dataCenter } from '../dataCenter';
+import { dataCenter } from '@vue-json-render/shared';
 import DynamicComponentRenderer from '../components/DynamicComponentRenderer.vue';
+import ModalRenderer from '../components/ModalRenderer.vue';
 
 const pageConfig = computed(() => dataCenter.state.config);
+const modals = computed(() => dataCenter.state.modals || []);
+const activeModalId = computed(() => dataCenter.state.activeModalId);
+const activeModal = computed(() => modals.value.find(m => m.id === activeModalId.value));
+
 const selectedId = ref('');
 
 const pageStyle = computed(() => {
@@ -50,6 +63,11 @@ const selectComponent = (id: string) => {
 const handleBackgroundClick = () => {
   selectedId.value = '';
   window.parent.postMessage({ type: 'COMPONENT_SELECTED', data: '' }, '*');
+};
+
+const closeModal = () => {
+    dataCenter.state.activeModalId = null;
+    window.parent.postMessage({ type: 'MODAL_CLOSED' }, '*');
 };
 
 onMounted(() => {

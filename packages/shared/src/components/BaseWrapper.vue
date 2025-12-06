@@ -28,12 +28,12 @@ const outerStyle = computed(() => {
   // But we probably want the outer div to be just a flow container.
   
   return {
-    width: '100vw',
+    width: '100%',
     display: 'flex',
     justifyContent: base.align || 'center',
     // If inner is absolute/fixed, this outer div will have 0 height unless content dictates otherwise,
     // or we can let it collapse.
-    pointerEvents: 'none' // Let clicks pass through the empty space of the strip? 
+    pointerEvents: 'none' as const // Let clicks pass through the empty space of the strip? 
                           // But we need clicks on the component. 
                           // We'll handle pointer-events: auto on the inner component.
   };
@@ -56,7 +56,7 @@ const style = computed(() => {
     borderColor: base.borderColor,
     borderRadius: base.borderRadius,
     zIndex: 1, // Default z-index
-    pointerEvents: 'auto' // Re-enable pointer events for the component itself
+    pointerEvents: 'auto' as const // Re-enable pointer events for the component itself
   };
 });
 </script>

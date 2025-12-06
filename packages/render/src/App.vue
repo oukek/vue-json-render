@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { provide } from 'vue';
-import { dataCenter } from './dataCenter';
+import { dataCenter } from '@vue-json-render/shared';
 
 provide('GlobalState', dataCenter.state);
 </script>

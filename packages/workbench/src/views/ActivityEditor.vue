@@ -14,7 +14,7 @@
             class="list-item" 
             v-for="(page, index) in pages" 
             :key="index"
-            :class="{ selected: currentPageIndex === index }"
+            :class="{ selected: editingType === 'page' && currentPageIndex === index }"
             @click="selectPage(index)"
           >
             <div class="item-content">
@@ -23,6 +23,28 @@
                 <span v-else class="btn-set-entry" @click.stop="setEntryPage(index)" title="设为入口页">🏠</span>
             </div>
             <button class="btn-delete-mini" @click.stop="deletePage(index)">×</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal List Section -->
+      <div class="panel-section modal-section">
+        <div class="panel-header">
+          <h3>弹窗</h3>
+          <button class="btn-add" @click="addModal">+</button>
+        </div>
+        <div class="list-container">
+          <div 
+            class="list-item" 
+            v-for="(modal, index) in modals" 
+            :key="index"
+            :class="{ selected: editingType === 'modal' && currentModalIndex === index }"
+            @click="selectModal(index)"
+          >
+            <div class="item-content">
+                <span class="item-name">{{ modal.name }}</span>
+            </div>
+            <button class="btn-delete-mini" @click.stop="deleteModal(index)">×</button>
           </div>
         </div>
       </div>
@@ -60,6 +82,9 @@
         <div class="header-left">
         </div>
         <div class="actions">
+          <button class="btn-secondary" @click="showDataSourceModal = true">
+            ⚙️ 配置数据源
+          </button>
           <button class="btn-secondary" @click="saveActivityWithAlert">保存</button>
           <button class="btn-secondary" @click="router.back()">退出</button>
         </div>
@@ -112,16 +137,17 @@
                 <CollapseItem title="基础信息" name="basic">
                     <FormInput 
                         label="组件名称" 
-                        v-model="selectedComponent.alias" 
-                        @update:modelValue="(val) => sendComponentDiff('alias', val)" 
+                        :modelValue="getComponentAlias(selectedComponent)" 
+                        @update:modelValue="(val: string) => { if(selectedComponent) { selectedComponent.alias = val; sendComponentDiff('alias', val); } }"
                         placeholder="输入组件名称"
                     />
                 </CollapseItem>
                 
                 <CollapseItem title="样式配置" name="style">
                      <BaseConfigForm 
-                        :modelValue="selectedComponent.base"
-                        @update:modelValue="(val) => { selectedComponent.base = val; }"
+                        v-if="selectedComponent"
+                        :modelValue="getComponentBase(selectedComponent)"
+                        @update:modelValue="(val) => { if(selectedComponent) selectedComponent.base = val; }"
                         @change="(key, val) => sendComponentDiff(key, val)"
                     />
                 </CollapseItem>
@@ -138,11 +164,19 @@
             </Collapse>
           </div>
           
-          <div v-else-if="currentPage" class="config-form page-config">
+          <div v-else-if="currentContainer && editingType === 'page'" class="config-form page-config">
              <PageConfigForm 
                  :modelValue="currentPage"
                  @update:modelValue="(val) => { pages[currentPageIndex] = val; }"
                  @change="(key, val) => sendPageDiff(key, val)"
+             />
+          </div>
+
+          <div v-else-if="currentContainer && editingType === 'modal'" class="config-form modal-config">
+             <ModalConfigForm 
+                 :modelValue="currentModal"
+                 @update:modelValue="(val) => { modals[currentModalIndex] = val; }"
+                 @change="(key, val) => sendConfig()"
              />
           </div>
           
@@ -173,6 +207,12 @@
         </div>
       </div>
     </div>
+
+    <DataSourceModal 
+      v-model:visible="showDataSourceModal"
+      :initialData="activity?.dataCenter?.fields || []"
+      @save="handleDataSourceUpdate"
+    />
   </div>
 </template>
 
@@ -181,9 +221,10 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import api from '../api';
 import { componentConfigs } from '@vue-json-render/shared/workbench';
-import { ActivityConfig, ComponentConfig, PageConfig, ColorPicker, DataField, BaseConfigForm, PageConfigForm, FormItem, FormInput } from '@vue-json-render/shared';
+import { ActivityConfig, ComponentConfig, PageConfig, ModalConfig, ColorPicker, DataField, BaseConfigForm, PageConfigForm, ModalConfigForm, FormItem, FormInput, editorStore } from '@vue-json-render/shared';
 import Collapse from '../components/Collapse.vue';
 import CollapseItem from '../components/CollapseItem.vue';
+import DataSourceModal from '../components/DataSourceModal.vue';
 import { toast } from '../utils/toast';
 
 const route = useRoute();
@@ -193,20 +234,32 @@ const isNew = computed(() => activityId === 'new');
 
 const activity = ref<any>(null);
 const pages = ref<PageConfig[]>([]);
+const modals = ref<ModalConfig[]>([]);
+
+// Sync modals to global editorStore so components (like Button) can access them
+watch(modals, (newModals) => {
+    editorStore.modals = newModals;
+}, { deep: true });
+
 const currentPageIndex = ref(0);
+const currentModalIndex = ref(0);
+const editingType = ref<'page' | 'modal'>('page');
 const selectedComponentId = ref('');
 const showComponentLibrary = ref(false);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 const iframeReady = ref(false);
 const activeCollapseNames = ref('props');
 const activeTab = ref('page'); // 'activity' | 'page'
+const showDataSourceModal = ref(false);
 
 const generateRoutePath = () => {
   return 'route_' + Math.random().toString(36).substr(2, 9);
 };
 
 const currentPage = computed(() => pages.value[currentPageIndex.value]);
-const currentComponents = computed(() => currentPage.value?.components || []);
+const currentModal = computed(() => modals.value[currentModalIndex.value]);
+const currentContainer = computed(() => editingType.value === 'page' ? currentPage.value : currentModal.value);
+const currentComponents = computed(() => currentContainer.value?.components || []);
 
 const selectedComponent = computed(() => 
   currentComponents.value.find(c => c.id === selectedComponentId.value)
@@ -214,12 +267,29 @@ const selectedComponent = computed(() =>
 
 // Communication with Iframe
 const sendConfig = () => {
-  if (!iframeRef.value || !iframeRef.value.contentWindow || !iframeReady.value || !currentPage.value) return;
+  if (!iframeRef.value || !iframeRef.value.contentWindow || !iframeReady.value) return;
   
-  // Send ONLY the current page config to the preview
+  // Send FULL config to the preview
+  const configToSend = {
+      ...currentPage.value, // Base is current page
+      modals: modals.value, // Pass all modals
+      // If editing modal, we might want to tell preview to show it?
+      // But for now, let's just send the updated data.
+      // Preview probably expects a PageConfig structure for the main view.
+  };
+
+  // Wait, the preview expects a PageConfig?
+  // Yes: data: JSON.parse(JSON.stringify(currentPage.value))
+  
+  // If we are editing a modal, we probably still want to show the current page in background, 
+  // and maybe the modal on top.
+  
+  // Let's verify what 'UPDATE_CONFIG' does in preview.
+  
   iframeRef.value.contentWindow.postMessage({
     type: 'UPDATE_CONFIG',
-    data: JSON.parse(JSON.stringify(currentPage.value))
+    data: JSON.parse(JSON.stringify(configToSend)),
+    activeModalId: editingType.value === 'modal' ? currentModal.value?.id : null
   }, '*');
   
   // Also send Data Center config
@@ -284,6 +354,13 @@ const handleMessage = (event: MessageEvent) => {
     sendSelection();
   } else if (type === 'COMPONENT_SELECTED') {
     selectedComponentId.value = data;
+  } else if (type === 'MODAL_CLOSED') {
+      // If modal closed in preview, switch back to page editing if we were editing that modal
+      // Or just respect it.
+      if (editingType.value === 'modal') {
+          // Keep it simple: switch to page
+          selectPage(currentPageIndex.value);
+      }
   }
 };
 
@@ -330,10 +407,28 @@ onMounted(async () => {
             }))
         }));
 
-        if (config.dataCenter) {
+        if (config.modals) {
+              modals.value = config.modals.map((m: ModalConfig) => ({
+                  ...m,
+                  components: m.components.map((c: ComponentConfig) => ({
+                     ...c,
+                     alias: c.alias || c.name
+                  }))
+              }));
+         } else {
+              modals.value = [];
+         }
+         editorStore.modals = modals.value;
+
+         if (config.dataCenter) {
             activity.value.dataCenter = config.dataCenter;
         } else {
             activity.value.dataCenter = { fields: [] };
+        }
+        
+        // Initialize global store
+        if (activity.value.dataCenter && activity.value.dataCenter.fields) {
+             editorStore.dataFields = activity.value.dataCenter.fields;
         }
     }
     
@@ -372,6 +467,10 @@ const updatePreview = () => {
   sendConfig();
 };
 
+watch(modals, (newModals) => {
+    editorStore.modals = newModals;
+}, { deep: true });
+
 const addPage = () => {
     const newPage: PageConfig = {
         pagename: `page_${pages.value.length + 1}`,
@@ -385,7 +484,44 @@ const addPage = () => {
 };
 
 const selectPage = (index: number) => {
+    editingType.value = 'page';
     currentPageIndex.value = index;
+    selectedComponentId.value = '';
+    sendConfig();
+};
+
+const addModal = () => {
+    const newModal: ModalConfig = {
+        id: `modal_${Date.now()}`,
+        name: `弹窗 ${modals.value.length + 1}`,
+        components: [],
+        mask: true,
+        maskClosable: true,
+        width: '80%',
+        height: '50%',
+        position: 'center',
+        animation: 'slide-up'
+    };
+    modals.value.push(newModal);
+    selectModal(modals.value.length - 1);
+};
+
+const deleteModal = (index: number) => {
+    modals.value.splice(index, 1);
+    if (modals.value.length === 0) {
+        selectPage(currentPageIndex.value);
+    } else {
+        if (currentModalIndex.value >= modals.value.length) {
+            currentModalIndex.value = modals.value.length - 1;
+        }
+        selectModal(currentModalIndex.value);
+    }
+    sendConfig();
+};
+
+const selectModal = (index: number) => {
+    editingType.value = 'modal';
+    currentModalIndex.value = index;
     selectedComponentId.value = '';
     sendConfig();
 };
@@ -415,12 +551,16 @@ const setEntryPage = (index: number) => {
     });
 };
 
+const getComponentAlias = (c: any) => c?.alias || '';
+const getComponentBase = (c: any) => c?.base;
+
 const addComponent = (name: string) => {
-  const configCreator = componentConfigs[name];
-  if (configCreator && currentPage.value) {
+  const configs: any = componentConfigs;
+  const configCreator = configs[name];
+  if (configCreator && currentContainer.value) {
     const newComponent = configCreator.create();
     newComponent.alias = name; // Initialize alias
-    currentPage.value.components.push(newComponent);
+    currentContainer.value.components.push(newComponent);
     selectedComponentId.value = newComponent.id;
     showComponentLibrary.value = false;
     nextTick(() => {
@@ -437,8 +577,8 @@ const selectComponent = (id: string) => {
 
 const deleteComponent = (id?: string) => {
     const targetId = id || selectedComponentId.value;
-    if (!targetId || !currentPage.value) return;
-    currentPage.value.components = currentPage.value.components.filter(c => c.id !== targetId);
+    if (!targetId || !currentContainer.value) return;
+    currentContainer.value.components = currentContainer.value.components.filter(c => c.id !== targetId);
     if (selectedComponentId.value === targetId) {
         selectedComponentId.value = '';
     }
@@ -452,6 +592,7 @@ const saveActivity = async () => {
         name: activity.value.name,
         type: 'default',
         pages: pages.value,
+        modals: modals.value,
         dataCenter: activity.value.dataCenter
     };
 
@@ -483,6 +624,18 @@ const saveActivityWithAlert = async () => {
         toast('保存成功', 'success');
     }
 };
+
+const handleDataSourceUpdate = (fields: DataField[]) => {
+  if (!activity.value) return;
+  if (!activity.value.dataCenter) {
+    activity.value.dataCenter = { fields: [] };
+  }
+  activity.value.dataCenter.fields = fields;
+  editorStore.dataFields = fields;
+  showDataSourceModal.value = false;
+  saveActivityWithAlert();
+  sendConfig();
+};
 </script>
 
 <style scoped>
@@ -501,7 +654,7 @@ const saveActivityWithAlert = async () => {
 }
 
 .left-panel {
-  width: 480px;
+  width: 600px;
   flex-shrink: 0;
   flex-direction: row;
 }

@@ -13,7 +13,7 @@
 <script setup lang="ts">
 import { onMounted, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { dataCenter } from '../dataCenter';
+import { dataCenter } from '@vue-json-render/shared';
 import DynamicComponentRenderer from '../components/DynamicComponentRenderer.vue';
 
 const route = useRoute();

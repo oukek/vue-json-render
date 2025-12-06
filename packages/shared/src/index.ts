@@ -26,6 +26,7 @@ export interface DataField {
   key: string;
   mockValue?: any;
   type: 'string' | 'number' | 'boolean' | 'object' | 'array';
+  children?: DataField[];
 }
 
 export interface DataCenterConfig {
@@ -53,10 +54,28 @@ export interface PageConfig {
   backgroundRepeat?: string; // 'no-repeat', 'repeat'
 }
 
+export interface ModalConfig {
+  id: string;
+  name: string;
+  components: ComponentConfig[];
+  animation?: string; // 'slide-up', 'fade', 'zoom', etc.
+  mask?: boolean;
+  maskColor?: string;
+  maskClosable?: boolean;
+  backgroundColor?: string;
+  width?: string;
+  height?: string;
+  position?: 'center' | 'bottom' | 'top';
+  borderRadius?: string;
+  heightMode?: 'auto' | 'fixed';
+  padding?: string;
+}
+
 export interface ActivityConfig {
   name: string;
   type: string;
   pages: PageConfig[];
+  modals?: ModalConfig[];
   dataCenter?: DataCenterConfig;
 }
 
@@ -81,15 +100,19 @@ import ColorPicker from './components/ColorPicker.vue';
 import VariableInput from './components/VariableInput.vue';
 import BaseConfigForm from './components/BaseConfig/BaseConfigForm.vue';
 import PageConfigForm from './components/PageConfig/PageConfigForm.vue';
+import ModalConfigForm from './components/ModalConfig/ModalConfigForm.vue';
 import FormItem from './components/Form/FormItem.vue';
 import FormInput from './components/Form/FormInput.vue';
 
-export * from './dataSource';
+export * from './store';
+export * from './dataCenter';
 export { 
   ColorPicker, 
   VariableInput, 
   BaseConfigForm, 
   PageConfigForm,
+  ModalConfigForm,
   FormItem,
   FormInput
 };
+

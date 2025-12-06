@@ -1,15 +1,15 @@
 import { BaseConfig, ComponentConfig } from '../../index';
 
 export interface ProgressProps {
-  percentage: number;
-  strokeWidth: number;
+  percentage: number | string;
+  strokeWidth: number | string;
   color: string;
   trackColor: string;
   showText: boolean;
   textInside: boolean;
   textColor: string;
   fontSize: string;
-  borderRadius: number;
+  borderRadius: number | string;
   striped: boolean;
   animated: boolean;
 }

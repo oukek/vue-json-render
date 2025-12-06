@@ -1,6 +1,5 @@
-import { reactive, computed } from 'vue';
-import { PageConfig, ComponentConfig, DataCenterConfig, BUILT_IN_DATA_MAP, ActivityConfig } from '@vue-json-render/shared';
-import api from './api';
+import { reactive } from 'vue';
+import { PageConfig, ComponentConfig, DataCenterConfig, ActivityConfig, ModalConfig } from './index';
 
 // Simple implementation of lodash set
 function set(obj: any, path: string, value: any) {
@@ -17,24 +16,42 @@ function set(obj: any, path: string, value: any) {
   current[keys[keys.length - 1]] = value;
 }
 
-interface User {
+export interface User {
   id: number;
   username: string;
   level: number;
   experience: number;
 }
 
-interface DynamicData {
+export interface DynamicData {
   user?: User;
   queryParams?: Record<string, string>;
   [key: string]: any;
 }
 
-class DataCenter {
+export interface ApiClient {
+  get(url: string, config?: any): Promise<any>;
+  post?(url: string, data?: any, config?: any): Promise<any>;
+  put?(url: string, data?: any, config?: any): Promise<any>;
+  delete?(url: string, config?: any): Promise<any>;
+}
+
+export interface Router {
+  push(to: string | any): Promise<any>;
+  replace?(to: string | any): Promise<any>;
+  back?(): void;
+}
+
+export class DataCenter {
+  private api?: ApiClient;
+  private router?: Router;
+
   state = reactive({
     activityId: '' as string,
     activityConfig: null as ActivityConfig | null,
     config: null as PageConfig | null,
+    modals: [] as ModalConfig[],
+    activeModalId: null as string | null,
     dataCenterConfig: null as DataCenterConfig | null,
     dynamicData: {
       user: {
@@ -52,17 +69,23 @@ class DataCenter {
   constructor() {
     // Detect mode
     try {
-      if (window.self !== window.top) {
+      if (typeof window !== 'undefined' && window.self !== window.top) {
         this.state.mode = 'preview';
       }
     } catch (e) {
       // Ignore cross-origin errors
     }
-    
+  }
+
+  setup(options: { api: ApiClient, router?: Router }) {
+    this.api = options.api;
+    this.router = options.router;
     this.init();
   }
 
   async init() {
+    if (typeof window === 'undefined') return;
+
     if (this.state.mode === 'preview') {
       window.addEventListener('message', this.handleMessage.bind(this));
     } else {
@@ -80,14 +103,17 @@ class DataCenter {
       if (this.state.activityId) {
         try {
           await this.loadActivity();
-          const router = (await import('./router')).default;
           
           // Find entry page
           const pages = this.state.activityConfig?.pages || [];
           const entryPage = pages.find(p => p.isEntry) || pages[0];
           
-          if (entryPage) {
-            router.push(`/page/${entryPage.routePath}`);
+          if (this.state.activityConfig?.modals) {
+             this.state.modals = this.state.activityConfig.modals;
+          }
+
+          if (entryPage && this.router) {
+            this.router.push(`/page/${entryPage.routePath}`);
           }
         } catch (e) {
           console.error('Init failed', e);
@@ -97,11 +123,24 @@ class DataCenter {
   }
 
   handleMessage(event: MessageEvent) {
-    const { type, data, key, value, id } = event.data;
+    const { type, data, key, value, id, activeModalId } = event.data;
     
     if (type === 'UPDATE_CONFIG') {
       // Full update
-      this.state.config = data;
+      // Check if data has modals
+      if (data.modals) {
+          this.state.modals = data.modals;
+          // Clean modals from page config
+          const pageConfig = { ...data };
+          delete pageConfig.modals;
+          this.state.config = pageConfig;
+      } else {
+          this.state.config = data;
+      }
+      
+      if (activeModalId !== undefined) {
+          this.state.activeModalId = activeModalId;
+      }
     } else if (type === 'UPDATE_DATA_CENTER') {
       this.state.dataCenterConfig = data;
     } else if (type === 'UPDATE_PAGE_DIFF') {
@@ -111,11 +150,24 @@ class DataCenter {
       }
     } else if (type === 'UPDATE_COMPONENT_DIFF') {
       // Component config update
+      // Try to find in page first
+      let found = false;
       if (this.state.config && id) {
         const component = this.state.config.components.find((c: ComponentConfig) => c.id === id);
         if (component) {
           set(component, key, value);
+          found = true;
         }
+      }
+      // If not found, try modals
+      if (!found && this.state.modals && id) {
+          for (const modal of this.state.modals) {
+              const component = modal.components.find((c: ComponentConfig) => c.id === id);
+              if (component) {
+                  set(component, key, value);
+                  break;
+              }
+          }
       }
     }
   }
@@ -184,8 +236,12 @@ class DataCenter {
     if (!activityId) {
       throw new Error('Activity ID is missing');
     }
+    if (!this.api) {
+      throw new Error('API client not initialized');
+    }
+
     try {
-      const res = await api.get(`/user/activities/${activityId}`);
+      const res = await this.api.get(`/user/activities/${activityId}`);
       const activityConfig = res.data.config as ActivityConfig;
       this.state.activityConfig = activityConfig;
       this.state.activityId = activityId;
@@ -225,8 +281,11 @@ class DataCenter {
   }
 
   async fetchDynamicData() {
+    if (!this.api) {
+      throw new Error('API client not initialized');
+    }
     try {
-      const res = await api.get('/user/info');
+      const res = await this.api.get('/user/info');
       
       this.state.dynamicData.user = res.data;
       return this.state.dynamicData;

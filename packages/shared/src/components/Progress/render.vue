@@ -45,12 +45,16 @@ const props = withDefaults(defineProps<ProgressProps>(), {
   animated: false,
 });
 
-const barStyle = computed(() => ({
-  width: `${Math.min(Math.max(props.percentage, 0), 100)}%`,
-  backgroundColor: props.color,
-  borderRadius: `${props.borderRadius}px`,
-  lineHeight: `${props.strokeWidth}px`
-}));
+const barStyle = computed(() => {
+  const pct = Number(props.percentage);
+  const validPct = isNaN(pct) ? 0 : pct;
+  return {
+    width: `${Math.min(Math.max(validPct, 0), 100)}%`,
+    backgroundColor: props.color,
+    borderRadius: `${props.borderRadius}px`,
+    lineHeight: `${props.strokeWidth}px`
+  };
+});
 
 </script>
 

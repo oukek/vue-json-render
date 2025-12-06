@@ -12,6 +12,7 @@
 import { computed } from 'vue';
 import { ButtonProps } from './config';
 import ConfigForm, { FormField } from '../Form/ConfigForm.vue';
+import { editorStore } from '../../store';
 
 const props = defineProps<{
   modelValue: ButtonProps;
@@ -50,6 +51,7 @@ const formConfig = computed<FormField[]>(() => {
       options: [
         { label: '无', value: 'none' },
         { label: '跳转链接', value: 'link' },
+        { label: '打开弹窗', value: 'openModal' },
         { label: '提交表单', value: 'submit' }
       ]
     }
@@ -60,6 +62,18 @@ const formConfig = computed<FormField[]>(() => {
       type: 'text',
       label: '跳转链接',
       key: 'actionUrl'
+    });
+  }
+
+  if (props.modelValue.actionType === 'openModal') {
+    config.push({
+      type: 'select',
+      label: '选择弹窗',
+      key: 'modalId',
+      options: editorStore.modals.map(m => ({
+          label: m.name,
+          value: m.id
+      }))
     });
   }
 

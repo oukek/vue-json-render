@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { ButtonProps } from './config';
+import { dataCenter } from '../../dataCenter';
 
 const props = withDefaults(defineProps<ButtonProps>(), {
   actionType: 'none',
@@ -24,6 +25,8 @@ const style = computed(() => ({
 const handleClick = () => {
   if (props.actionType === 'link' && props.actionUrl) {
     window.location.href = props.actionUrl;
+  } else if (props.actionType === 'openModal' && props.modalId) {
+    dataCenter.state.activeModalId = props.modalId;
   }
   // Other actions
 };

@@ -1,5 +1,5 @@
 <template>
-  <ConfigForm
+ <ConfigForm
     :modelValue="modelValue"
     :dataBinding="dataBinding"
     :config="formConfig"
