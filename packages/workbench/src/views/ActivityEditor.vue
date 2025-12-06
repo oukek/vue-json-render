@@ -3,48 +3,64 @@
     <!-- Left Panel: Pages & Component Tree -->
     <div class="panel left-panel">
       
-      <!-- Page List Section -->
-      <div class="panel-section page-section">
-        <div class="panel-header">
-          <h3>页面</h3>
-          <button class="btn-add" @click="addPage">+</button>
-        </div>
-        <div class="list-container">
+      <!-- Resource List Section (Pages/Modals) -->
+      <div class="panel-section resource-section">
+        <div class="panel-tabs">
           <div 
-            class="list-item" 
-            v-for="(page, index) in pages" 
-            :key="index"
-            :class="{ selected: editingType === 'page' && currentPageIndex === index }"
-            @click="selectPage(index)"
-          >
-            <div class="item-content">
-                <span class="item-name">{{ page.pagename }}</span>
-                <span v-if="page.isEntry" class="badge-entry">首页</span>
-                <span v-else class="btn-set-entry" @click.stop="setEntryPage(index)" title="设为入口页">🏠</span>
+            class="tab-item" 
+            :class="{ active: resourceTab === 'page' }"
+            @click="resourceTab = 'page'"
+          >页面</div>
+          <div 
+            class="tab-item" 
+            :class="{ active: resourceTab === 'modal' }"
+            @click="resourceTab = 'modal'"
+          >弹窗</div>
+        </div>
+
+        <!-- Page List -->
+        <div v-show="resourceTab === 'page'" class="list-wrapper">
+          <div class="panel-header">
+            <h3>页面列表</h3>
+            <button class="btn-add" @click="addPage">+</button>
+          </div>
+          <div class="list-container">
+            <div 
+              class="list-item" 
+              v-for="(page, index) in pages" 
+              :key="index"
+              :class="{ selected: editingType === 'page' && currentPageIndex === index }"
+              @click="selectPage(index)"
+            >
+              <div class="item-content">
+                  <span class="item-name">{{ page.pagename }}</span>
+                  <span v-if="page.isEntry" class="badge-entry">首页</span>
+                  <span v-else class="btn-set-entry" @click.stop="setEntryPage(index)" title="设为入口页">🏠</span>
+              </div>
+              <button class="btn-delete-mini" @click.stop="deletePage(index)">×</button>
             </div>
-            <button class="btn-delete-mini" @click.stop="deletePage(index)">×</button>
           </div>
         </div>
-      </div>
 
-      <!-- Modal List Section -->
-      <div class="panel-section modal-section">
-        <div class="panel-header">
-          <h3>弹窗</h3>
-          <button class="btn-add" @click="addModal">+</button>
-        </div>
-        <div class="list-container">
-          <div 
-            class="list-item" 
-            v-for="(modal, index) in modals" 
-            :key="index"
-            :class="{ selected: editingType === 'modal' && currentModalIndex === index }"
-            @click="selectModal(index)"
-          >
-            <div class="item-content">
-                <span class="item-name">{{ modal.name }}</span>
+        <!-- Modal List -->
+        <div v-show="resourceTab === 'modal'" class="list-wrapper">
+          <div class="panel-header">
+            <h3>弹窗列表</h3>
+            <button class="btn-add" @click="addModal">+</button>
+          </div>
+          <div class="list-container">
+            <div 
+              class="list-item" 
+              v-for="(modal, index) in modals" 
+              :key="index"
+              :class="{ selected: editingType === 'modal' && currentModalIndex === index }"
+              @click="selectModal(index)"
+            >
+              <div class="item-content">
+                  <span class="item-name">{{ modal.name }}</span>
+              </div>
+              <button class="btn-delete-mini" @click.stop="deleteModal(index)">×</button>
             </div>
-            <button class="btn-delete-mini" @click.stop="deleteModal(index)">×</button>
           </div>
         </div>
       </div>
@@ -244,7 +260,14 @@ watch(modals, (newModals) => {
 const currentPageIndex = ref(0);
 const currentModalIndex = ref(0);
 const editingType = ref<'page' | 'modal'>('page');
+const resourceTab = ref<'page' | 'modal'>('page');
 const selectedComponentId = ref('');
+
+watch(editingType, (newType) => {
+    if (newType === 'page' || newType === 'modal') {
+        resourceTab.value = newType;
+    }
+});
 const showComponentLibrary = ref(false);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 const iframeReady = ref(false);
@@ -654,9 +677,16 @@ const handleDataSourceUpdate = (fields: DataField[]) => {
 }
 
 .left-panel {
-  width: 600px;
+  width: 400px;
   flex-shrink: 0;
   flex-direction: row;
+}
+
+.list-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
 }
 
 .mini-input {

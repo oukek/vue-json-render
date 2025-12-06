@@ -24,7 +24,7 @@ app.post('/admin/activities/:id/upload', authenticate('admin'), upload.single('f
 // User Routes
 app.post('/user/login', userLogin);
 app.get('/user/info', authenticate('user'), getUserInfo);
-app.get('/user/activities/:id', authenticate('user'), getUserActivityConfig);
+app.get('/user/activities/:id', getUserActivityConfig);
 
 app.listen(port, () => {
   console.log(`API server running on http://localhost:${port}`);

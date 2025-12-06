@@ -7,6 +7,13 @@
     />
     <div v-if="loading" class="loading-state">加载中...</div>
     <div v-if="error" class="error-state">{{ error }}</div>
+
+    <!-- Modal Renderer -->
+    <ModalRenderer 
+      v-if="activeModalConfig"
+      :config="activeModalConfig"
+      @close="closeModal"
+    />
   </div>
 </template>
 
@@ -15,11 +22,23 @@ import { onMounted, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { dataCenter } from '@vue-json-render/shared';
 import DynamicComponentRenderer from '../components/DynamicComponentRenderer.vue';
+import ModalRenderer from '../components/ModalRenderer.vue';
 
 const route = useRoute();
 const loading = computed(() => dataCenter.state.loading);
 const error = computed(() => dataCenter.state.error);
 const pageConfig = computed(() => dataCenter.state.config);
+
+// Modal logic
+const activeModalId = computed(() => dataCenter.state.activeModalId);
+const activeModalConfig = computed(() => {
+  if (!activeModalId.value || !dataCenter.state.modals) return null;
+  return dataCenter.state.modals.find(m => m.id === activeModalId.value);
+});
+
+const closeModal = () => {
+  dataCenter.state.activeModalId = null;
+};
 
 const pageStyle = computed(() => {
   if (!pageConfig.value) return {};

@@ -45,6 +45,7 @@ export interface Router {
 export class DataCenter {
   private api?: ApiClient;
   private router?: Router;
+  private initializing = false;
 
   state = reactive({
     activityId: '' as string,
@@ -101,6 +102,8 @@ export class DataCenter {
       }
 
       if (this.state.activityId) {
+        this.initializing = true;
+        this.state.loading = true;
         try {
           await this.loadActivity();
           
@@ -112,11 +115,26 @@ export class DataCenter {
              this.state.modals = this.state.activityConfig.modals;
           }
 
+          // Allow initPage to run during redirect
+          this.initializing = false;
+
           if (entryPage && this.router) {
-            this.router.push(`/page/${entryPage.routePath}`);
+            const routeParams = {
+              path: `/page/${entryPage.routePath}`,
+              query: this.state.dynamicData.queryParams
+            };
+            if (this.router.replace) {
+              await this.router.replace(routeParams);
+            } else {
+              await this.router.push(routeParams);
+            }
           }
         } catch (e) {
           console.error('Init failed', e);
+          this.state.error = 'Initialization failed';
+        } finally {
+          this.initializing = false;
+          this.state.loading = false;
         }
       }
     }
@@ -173,6 +191,8 @@ export class DataCenter {
   }
 
   async initPage(pageId?: string) {
+    if (this.initializing) return;
+
     this.state.loading = true;
     this.state.error = '';
     try {
