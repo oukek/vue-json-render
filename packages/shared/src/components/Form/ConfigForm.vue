@@ -71,6 +71,16 @@
         @update:modelValue="(val) => updateField(field.key, val)"
       />
 
+      <!-- Variable Picker -->
+      <div v-else-if="field.type === 'variable-picker'" class="form-item">
+         <div class="form-label">{{ field.label }}</div>
+         <VariablePicker
+            :modelValue="modelValue[field.key]"
+            v-bind="field.props"
+            @update:modelValue="(val) => updateField(field.key, val)"
+         />
+      </div>
+
     </template>
   </div>
 </template>
@@ -83,9 +93,10 @@ import FormRadio from './FormRadio.vue';
 import FormCheckbox from './FormCheckbox.vue';
 import FormSlider from './FormSlider.vue';
 import FormSwitch from './FormSwitch.vue';
+import VariablePicker from '../VariablePicker.vue';
 
 export interface FormField {
-  type: 'text' | 'color' | 'select' | 'number' | 'radio' | 'checkbox' | 'slider' | 'switch';
+  type: 'text' | 'color' | 'select' | 'number' | 'radio' | 'checkbox' | 'slider' | 'switch' | 'variable-picker';
   label: string;
   key: string;
   options?: { label: string; value: string | number }[];

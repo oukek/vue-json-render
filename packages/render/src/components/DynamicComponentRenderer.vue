@@ -10,7 +10,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { ComponentConfig } from '@vue-json-render/shared';
-import { dataCenter } from '@vue-json-render/shared';
+import { dataCenter, BaseWrapper } from '@vue-json-render/shared';
 
 const props = defineProps<{
   config: ComponentConfig;

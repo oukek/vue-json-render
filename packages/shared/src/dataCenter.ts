@@ -124,6 +124,12 @@ export class DataCenter {
              this.state.modals = this.state.activityConfig.modals;
           }
 
+          if (targetRoutePath) {
+             // Explicitly set page config because initPage might have been called 
+             // and returned early while initializing was true
+             this.setPage(targetRoutePath);
+          }
+
           // Allow initPage to run during redirect
           this.initializing = false;
 
@@ -233,6 +239,11 @@ export class DataCenter {
         }
     }
     return current;
+  }
+
+  setValue(path: string, value: any) {
+    if (!path) return;
+    set(this.state.dynamicData, path, value);
   }
 
   resolveComponentProps(component: ComponentConfig) {

@@ -7,12 +7,15 @@ import ImageWorkbench from './components/Image/workbench.vue';
 import { createImageConfig, defaultBaseConfig as defaultImageBase, defaultImageProps } from './components/Image/config';
 import ProgressWorkbench from './components/Progress/workbench.vue';
 import { createProgressConfig, defaultBaseConfig as defaultProgressBase, defaultProgressProps } from './components/Progress/config';
+import InputWorkbench from './components/Input/workbench.vue';
+import { createInputConfig, defaultBaseConfig as defaultInputBase, defaultInputProps } from './components/Input/config';
 
 export const workbenchComponents: Record<string, any> = {
   'Button': ButtonWorkbench,
   'Text': TextWorkbench,
   'Image': ImageWorkbench,
   'Progress': ProgressWorkbench,
+  'Input': InputWorkbench,
 };
 
 export const componentConfigs = {
@@ -35,6 +38,11 @@ export const componentConfigs = {
     create: createProgressConfig,
     defaultBase: defaultProgressBase,
     defaultProps: defaultProgressProps,
+  },
+  'Input': {
+    create: createInputConfig,
+    defaultBase: defaultInputBase,
+    defaultProps: defaultInputProps,
   },
 };
 

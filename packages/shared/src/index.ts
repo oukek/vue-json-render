@@ -103,6 +103,7 @@ import PageConfigForm from './components/PageConfig/PageConfigForm.vue';
 import ModalConfigForm from './components/ModalConfig/ModalConfigForm.vue';
 import FormItem from './components/Form/FormItem.vue';
 import FormInput from './components/Form/FormInput.vue';
+import BaseWrapper from './components/BaseWrapper.vue';
 
 export * from './store';
 export * from './dataCenter';
@@ -113,6 +114,7 @@ export {
   PageConfigForm,
   ModalConfigForm,
   FormItem,
-  FormInput
+  FormInput,
+  BaseWrapper
 };
 
