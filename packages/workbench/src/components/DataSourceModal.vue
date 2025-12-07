@@ -12,6 +12,9 @@
             <button class="add-root-btn" @click="addRootNode">
               ➕ 添加根节点
             </button>
+            <button class="add-root-btn" @click="importJsonToRoot" style="margin-left: 8px;">
+              📥 导入 JSON
+            </button>
           </div>
           <div class="tree-container">
             <DataSourceNode
@@ -41,13 +44,27 @@
         <button class="btn btn-primary" @click="save">保存</button>
       </div>
     </div>
+
+    <JsonImportModal 
+      v-model:visible="importModalVisible"
+      @import="handleJsonImport"
+    />
+
+    <ConflictModal
+      :visible="conflictModalVisible"
+      :conflict="currentConflict"
+      @resolve="resolveConflict"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, provide } from 'vue';
 import { DataField } from '@vue-json-render/shared';
 import DataSourceNode from './DataSourceNode.vue';
+import JsonImportModal from './JsonImportModal.vue';
+import ConflictModal, { ConflictData } from './ConflictModal.vue';
+import { inferSchema } from '../utils/schemaHelper';
 
 const props = defineProps<{
   visible: boolean;
@@ -58,6 +75,102 @@ const emit = defineEmits(['update:visible', 'save']);
 
 const localDataSource = ref<DataField[]>([]);
 const isValid = ref(true);
+
+// Import & Merge State
+const importModalVisible = ref(false);
+const conflictModalVisible = ref(false);
+const currentConflict = ref<ConflictData | null>(null);
+
+let currentImportContext: {
+  existingFields: DataField[];
+  onSave: (fields: DataField[]) => void;
+} | null = null;
+
+let resolveConflictPromise: ((choice: 'existing' | 'imported') => void) | null = null;
+
+// Provide openImport to children
+const openImport = (context: { existingFields: DataField[], onSave: (fields: DataField[]) => void }) => {
+  currentImportContext = context;
+  importModalVisible.value = true;
+};
+
+provide('openImport', openImport);
+
+const importJsonToRoot = () => {
+  openImport({
+    existingFields: localDataSource.value,
+    onSave: (fields) => {
+      localDataSource.value = fields;
+    }
+  });
+};
+
+const handleJsonImport = async (json: any) => {
+  if (!currentImportContext) return;
+
+  const rootSchema = inferSchema(json, 'temp');
+  let newFields: DataField[] = [];
+
+  if (rootSchema.type === 'object' && rootSchema.children) {
+    newFields = rootSchema.children;
+  } else if (rootSchema.type === 'array' && rootSchema.children) {
+      // For array, if we are importing into a list of fields, 
+      // maybe we iterate the array items?
+      // But schemaHelper returns the schema of the array itself.
+      // If user provided [ {a:1}, {b:2} ], inferSchema might return array with children describing {a,b}.
+      // But we want to add 'a' and 'b' to the current node?
+      // It's ambiguous. Let's strictly require Object for field addition.
+      alert('请导入 JSON 对象以添加字段');
+      return;
+  } else {
+      alert('请导入 JSON 对象以添加字段');
+      return;
+  }
+
+  // Clone existing to avoid mutating in place during merge
+  const merged = [...currentImportContext.existingFields];
+
+  for (const field of newFields) {
+    const existingIndex = merged.findIndex(f => f.key === field.key);
+    if (existingIndex === -1) {
+      merged.push(field);
+    } else {
+      const existing = merged[existingIndex];
+      if (existing.type === field.type) {
+        // Same type, keep existing (do nothing)
+      } else {
+        // Different type, ask user
+        const choice = await promptConflict({
+          key: field.key,
+          existingType: existing.type,
+          importedType: field.type
+        });
+
+        if (choice === 'imported') {
+          merged[existingIndex] = field;
+        }
+      }
+    }
+  }
+
+  currentImportContext.onSave(merged);
+};
+
+const promptConflict = (conflict: ConflictData): Promise<'existing' | 'imported'> => {
+  currentConflict.value = conflict;
+  conflictModalVisible.value = true;
+  return new Promise((resolve) => {
+    resolveConflictPromise = resolve;
+  });
+};
+
+const resolveConflict = (choice: 'existing' | 'imported') => {
+  conflictModalVisible.value = false;
+  if (resolveConflictPromise) {
+    resolveConflictPromise(choice);
+    resolveConflictPromise = null;
+  }
+};
 
 watch(() => props.visible, (val) => {
   if (val) {

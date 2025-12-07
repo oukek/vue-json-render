@@ -101,6 +101,9 @@
           <button class="btn-secondary" @click="showDataSourceModal = true">
             ⚙️ 配置数据源
           </button>
+          <button class="btn-secondary" @click="copyActivityLink">
+            🔗 复制链接
+          </button>
           <button class="btn-secondary" @click="saveActivityWithAlert">保存</button>
           <button class="btn-secondary" @click="router.back()">退出</button>
         </div>
@@ -646,6 +649,21 @@ const saveActivityWithAlert = async () => {
     if (success) {
         toast('保存成功', 'success');
     }
+};
+
+const copyActivityLink = () => {
+    if (!activityId || isNew.value) {
+        toast('请先保存活动', 'error');
+        return;
+    }
+    // Assume port 3001 for preview/runner
+    const url = `${window.location.protocol}//${window.location.hostname}:3001/?id=${activityId}`;
+    
+    navigator.clipboard.writeText(url).then(() => {
+        toast('活动链接已复制', 'success');
+    }).catch(() => {
+        toast('复制失败', 'error');
+    });
 };
 
 const handleDataSourceUpdate = (fields: DataField[]) => {

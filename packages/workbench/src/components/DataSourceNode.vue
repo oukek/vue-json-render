@@ -47,6 +47,14 @@
         <button 
           v-if="isContainer" 
           class="icon-btn" 
+          @click="importJson" 
+          title="导入 JSON"
+        >
+          📥
+        </button>
+        <button 
+          v-if="isContainer" 
+          class="icon-btn" 
           @click="addChild" 
           title="添加子节点"
         >
@@ -69,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, inject } from 'vue';
 import { DataField } from '@vue-json-render/shared';
 
 const props = defineProps<{
@@ -78,6 +86,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits(['update', 'remove']);
+
+const openImport = inject<(context: { existingFields: DataField[], onSave: (fields: DataField[]) => void }) => void>('openImport');
 
 const localNode = ref<DataField>({ ...props.node });
 const expanded = ref(true);
@@ -131,6 +141,22 @@ const addChild = () => {
   });
   expanded.value = true;
   emitUpdate();
+};
+
+const importJson = () => {
+  if (openImport) {
+    if (!localNode.value.children) {
+      localNode.value.children = [];
+    }
+    openImport({
+      existingFields: localNode.value.children,
+      onSave: (fields) => {
+        localNode.value.children = fields;
+        expanded.value = true;
+        emitUpdate();
+      }
+    });
+  }
 };
 
 const updateChild = (index: number, child: DataField) => {

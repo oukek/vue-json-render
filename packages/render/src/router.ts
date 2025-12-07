@@ -4,7 +4,6 @@ import Preview from './views/Preview.vue';
 
 const routes = [
   { path: '/', component: DynamicPage },
-  { path: '/page/:pageId?', component: DynamicPage },
   { path: '/preview', component: Preview },
 ];
 

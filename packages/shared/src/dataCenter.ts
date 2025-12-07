@@ -111,9 +111,14 @@ export class DataCenter {
         try {
           await this.loadActivity();
           
-          // Find entry page
+          // Find target page
           const pages = this.state.activityConfig?.pages || [];
-          const entryPage = pages.find(p => p.isEntry) || pages[0];
+          let targetRoutePath = this.state.dynamicData.queryParams['pageId'];
+          
+          if (!targetRoutePath) {
+             const entryPage = pages.find(p => p.isEntry) || pages[0];
+             if (entryPage) targetRoutePath = entryPage.routePath;
+          }
           
           if (this.state.activityConfig?.modals) {
              this.state.modals = this.state.activityConfig.modals;
@@ -122,10 +127,13 @@ export class DataCenter {
           // Allow initPage to run during redirect
           this.initializing = false;
 
-          if (entryPage && this.router) {
+          if (targetRoutePath && this.router) {
             const routeParams = {
-              path: `/page/${entryPage.routePath}`,
-              query: this.state.dynamicData.queryParams
+              path: '/',
+              query: {
+                ...this.state.dynamicData.queryParams,
+                pageId: targetRoutePath
+              }
             };
             if (this.router.replace) {
               await this.router.replace(routeParams);

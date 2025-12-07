@@ -52,10 +52,10 @@ const pageStyle = computed(() => {
 });
 
 const init = () => {
-    dataCenter.initPage(route.params.pageId as string | undefined);
+    dataCenter.initPage(route.query.pageId as string | undefined);
 };
 
-watch(() => route.params.pageId, () => {
+watch(() => route.query.pageId, () => {
     init();
 });
 
