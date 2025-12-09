@@ -80,6 +80,18 @@ export const updateActivity = async (req: Request, res: Response) => {
   }
 };
 
+export const deleteActivity = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    await prisma.activity.delete({
+      where: { id: Number(id) }
+    });
+    res.json({ message: '活动删除成功' });
+  } catch (error) {
+    res.status(500).json({ message: '删除活动失败' });
+  }
+};
+
 export const uploadActivity = async (req: Request, res: Response) => {
     // This endpoint was requested: POST /activities/:id/upload
     // Assuming it updates the config from a file or something similar, 

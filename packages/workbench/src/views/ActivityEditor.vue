@@ -101,6 +101,9 @@
           <button class="btn-secondary" @click="showDataSourceModal = true">
             ⚙️ 配置数据源
           </button>
+          <button class="btn-secondary" @click="showJsonPreview = true">
+            JSON
+          </button>
           <button class="btn-secondary" @click="copyActivityLink">
             🔗 复制链接
           </button>
@@ -232,6 +235,11 @@
       :initialData="activity?.dataCenter?.fields || []"
       @save="handleDataSourceUpdate"
     />
+    
+    <JsonPreviewModal
+      v-model:visible="showJsonPreview"
+      :json="currentConfigJson"
+    />
   </div>
 </template>
 
@@ -241,9 +249,10 @@ import { useRoute, useRouter } from 'vue-router';
 import api from '../api';
 import { componentConfigs } from '@vue-json-render/shared/workbench';
 import { ActivityConfig, ComponentConfig, PageConfig, ModalConfig, ColorPicker, DataField, BaseConfigForm, PageConfigForm, ModalConfigForm, FormItem, FormInput, editorStore } from '@vue-json-render/shared';
-import Collapse from '../components/Collapse.vue';
-import CollapseItem from '../components/CollapseItem.vue';
-import DataSourceModal from '../components/DataSourceModal.vue';
+import Collapse from '../components/basic/Collapse.vue';
+import CollapseItem from '../components/basic/CollapseItem.vue';
+import DataSourceModal from '../components/business/DataSourceModal.vue';
+import JsonPreviewModal from '../components/business/JsonPreviewModal.vue';
 import { toast } from '../utils/toast';
 
 const route = useRoute();
@@ -254,6 +263,15 @@ const isNew = computed(() => activityId === 'new');
 const activity = ref<any>(null);
 const pages = ref<PageConfig[]>([]);
 const modals = ref<ModalConfig[]>([]);
+
+const showJsonPreview = ref(false);
+const currentConfigJson = computed(() => {
+    return {
+        pages: pages.value,
+        modals: modals.value,
+        dataCenter: activity.value?.dataCenter
+    };
+});
 
 // Sync modals to global editorStore so components (like Button) can access them
 watch(modals, (newModals) => {
@@ -883,7 +901,7 @@ const handleDataSourceUpdate = (fields: DataField[]) => {
 }
 
 .right-panel {
-  width: 300px;
+  width: 500px;
   flex-shrink: 0;
   border-left: 1px solid #e5e7eb;
   border-right: none;

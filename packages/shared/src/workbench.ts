@@ -1,14 +1,18 @@
 import { App } from 'vue';
-import ButtonWorkbench from './components/Button/workbench.vue';
-import { createButtonConfig, defaultBaseConfig, defaultButtonProps } from './components/Button/config';
-import TextWorkbench from './components/Text/workbench.vue';
-import { createTextConfig, defaultBaseConfig as defaultTextBase, defaultTextProps } from './components/Text/config';
-import ImageWorkbench from './components/Image/workbench.vue';
-import { createImageConfig, defaultBaseConfig as defaultImageBase, defaultImageProps } from './components/Image/config';
-import ProgressWorkbench from './components/Progress/workbench.vue';
-import { createProgressConfig, defaultBaseConfig as defaultProgressBase, defaultProgressProps } from './components/Progress/config';
-import InputWorkbench from './components/Input/workbench.vue';
-import { createInputConfig, defaultBaseConfig as defaultInputBase, defaultInputProps } from './components/Input/config';
+import ButtonWorkbench from './components/basic/Button/workbench.vue';
+import { createButtonConfig, defaultBaseConfig, defaultButtonProps } from './components/basic/Button/config';
+import TextWorkbench from './components/basic/Text/workbench.vue';
+import { createTextConfig, defaultBaseConfig as defaultTextBase, defaultTextProps } from './components/basic/Text/config';
+import ImageWorkbench from './components/basic/Image/workbench.vue';
+import { createImageConfig, defaultBaseConfig as defaultImageBase, defaultImageProps } from './components/basic/Image/config';
+import ProgressWorkbench from './components/basic/Progress/workbench.vue';
+import { createProgressConfig, defaultBaseConfig as defaultProgressBase, defaultProgressProps } from './components/basic/Progress/config';
+import InputWorkbench from './components/basic/Input/workbench.vue';
+import { createInputConfig, defaultBaseConfig as defaultInputBase, defaultInputProps } from './components/basic/Input/config';
+import ListSelectWorkbench from './components/basic/ListSelect/workbench.vue';
+import { createListSelectConfig, defaultBaseConfig as defaultListSelectBase, defaultListSelectProps } from './components/basic/ListSelect/config';
+import LoginWorkbench from './components/business/Login/workbench.vue';
+import { createLoginConfig, defaultBaseConfig as defaultLoginBase, defaultLoginProps } from './components/business/Login/config';
 
 export const workbenchComponents: Record<string, any> = {
   'Button': ButtonWorkbench,
@@ -16,6 +20,8 @@ export const workbenchComponents: Record<string, any> = {
   'Image': ImageWorkbench,
   'Progress': ProgressWorkbench,
   'Input': InputWorkbench,
+  'ListSelect': ListSelectWorkbench,
+  'Login': LoginWorkbench,
 };
 
 export const componentConfigs = {
@@ -43,6 +49,16 @@ export const componentConfigs = {
     create: createInputConfig,
     defaultBase: defaultInputBase,
     defaultProps: defaultInputProps,
+  },
+  'ListSelect': {
+    create: createListSelectConfig,
+    defaultBase: defaultListSelectBase,
+    defaultProps: defaultListSelectProps,
+  },
+  'Login': {
+    create: createLoginConfig,
+    defaultBase: defaultLoginBase,
+    defaultProps: defaultLoginProps,
   },
 };
 

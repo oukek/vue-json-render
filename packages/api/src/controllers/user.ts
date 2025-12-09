@@ -5,8 +5,12 @@ import bcrypt from 'bcryptjs';
 import { JWT_SECRET } from '../middleware/auth';
 
 export const userLogin = async (req: Request, res: Response) => {
-  const { username, password } = req.body;
+  const { username, password, serverId } = req.body;
   try {
+    if (!serverId) {
+       return res.status(400).json({ message: '请选择服务器' });
+    }
+
     // Auto-create user for demo if not exists (e.g. user/123456)
     const userCount = await prisma.user.count();
     if (userCount === 0 && username === 'user' && password === '123456') {

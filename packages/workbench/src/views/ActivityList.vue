@@ -13,9 +13,14 @@
     <main class="main-content">
       <div class="page-header">
         <h1>活动管理</h1>
-        <button class="btn-primary" @click="createActivity">
-          + 新建活动
-        </button>
+        <div>
+            <button class="btn-secondary" @click="showImportModal = true" style="margin-right: 12px">
+                导入 JSON
+            </button>
+            <button class="btn-primary" @click="createActivity">
+                + 新建活动
+            </button>
+        </div>
       </div>
 
       <div class="table-container">
@@ -34,7 +39,10 @@
               <td>{{ activity.name }}</td>
               <td>{{ new Date(activity.createdAt).toLocaleString() }}</td>
               <td>
-                <button class="btn-secondary btn-sm" @click="editActivity(activity)">编辑</button>
+                <button class="btn-secondary btn-sm" @click="manageActivity(activity)">管理</button>
+                <button class="btn-secondary btn-sm" @click="editActivity(activity)" style="margin-left: 8px">编辑</button>
+                <button class="btn-secondary btn-sm" @click="duplicateActivity(activity)" style="margin-left: 8px">复制</button>
+                <button class="btn-danger btn-sm" @click="confirmDelete(activity)" style="margin-left: 8px">删除</button>
               </td>
             </tr>
             <tr v-if="activities.length === 0">
@@ -44,6 +52,18 @@
         </table>
       </div>
     </main>
+    
+    <JsonImportModal 
+        v-model:visible="showImportModal"
+        @import="handleImport"
+    />
+    
+    <ConfirmModal
+      v-model:visible="showDeleteModal"
+      title="删除活动"
+      :message="`确定要删除活动 '${activityToDelete?.name}' 吗？此操作无法撤销。`"
+      @confirm="handleDelete"
+    />
   </div>
 </template>
 
@@ -51,9 +71,15 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api';
+import JsonImportModal from '../components/business/JsonImportModal.vue';
+import ConfirmModal from '../components/business/ConfirmModal.vue';
+import { toast } from '../utils/toast';
 
 const router = useRouter();
 const activities = ref<any[]>([]);
+const showImportModal = ref(false);
+const showDeleteModal = ref(false);
+const activityToDelete = ref<any>(null);
 
 const fetchActivities = async () => {
   try {
@@ -70,6 +96,58 @@ const createActivity = () => {
 
 const editActivity = (activity: any) => {
     router.push(`/editor/${activity.id}`);
+};
+
+const manageActivity = (activity: any) => {
+    router.push(`/activity/${activity.id}/manage`);
+};
+
+const duplicateActivity = async (activity: any) => {
+    try {
+        await api.post('/admin/activities', {
+            name: `${activity.name} (副本)`,
+            config: activity.config
+        });
+        toast('复制成功', 'success');
+        fetchActivities();
+    } catch (e) {
+        console.error(e);
+        toast('复制失败', 'error');
+    }
+};
+
+const confirmDelete = (activity: any) => {
+    activityToDelete.value = activity;
+    showDeleteModal.value = true;
+};
+
+const handleDelete = async () => {
+    if (!activityToDelete.value) return;
+    
+    try {
+        await api.delete(`/admin/activities/${activityToDelete.value.id}`);
+        toast('删除成功', 'success');
+        fetchActivities();
+    } catch (e) {
+        console.error(e);
+        toast('删除失败', 'error');
+    } finally {
+        activityToDelete.value = null;
+    }
+};
+
+const handleImport = async (json: any) => {
+    try {
+        await api.post('/admin/activities', {
+            name: '导入的活动',
+            config: json
+        });
+        toast('导入成功', 'success');
+        fetchActivities();
+    } catch (e) {
+        console.error(e);
+        toast('导入失败', 'error');
+    }
 };
 
 const logout = () => {
@@ -178,6 +256,48 @@ tr:last-child td {
 .btn-sm {
     padding: 4px 12px;
     font-size: 12px;
+}
+
+.btn-secondary {
+    background-color: white;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-secondary:hover {
+    background-color: #f3f4f6;
+}
+
+.btn-primary {
+    background-color: #4f46e5;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    font-size: 14px;
+}
+
+.btn-primary:hover {
+    background-color: #4338ca;
+}
+
+.btn-danger {
+    background-color: #ef4444;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    font-size: 14px;
+}
+
+.btn-danger:hover {
+    background-color: #dc2626;
 }
 
 .empty-state {

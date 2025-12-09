@@ -1,5 +1,5 @@
 import { reactive } from 'vue';
-import { PageConfig, ComponentConfig, DataCenterConfig, ActivityConfig, ModalConfig } from './index';
+import { PageConfig, ComponentConfig, DataCenterConfig, ActivityConfig, ModalConfig, DataField } from './index';
 
 // Simple implementation of lodash set
 function set(obj: any, path: string, value: any) {
@@ -16,7 +16,7 @@ function set(obj: any, path: string, value: any) {
   current[keys[keys.length - 1]] = value;
 }
 
-export interface User {
+export interface UserInfo {
   id: number;
   username: string;
   level: number;
@@ -24,16 +24,16 @@ export interface User {
 }
 
 export interface DynamicData {
-  user?: User;
+  user?: UserInfo;
   queryParams?: Record<string, string>;
   [key: string]: any;
 }
 
 export interface ApiClient {
   get(url: string, config?: any): Promise<any>;
-  post?(url: string, data?: any, config?: any): Promise<any>;
-  put?(url: string, data?: any, config?: any): Promise<any>;
-  delete?(url: string, config?: any): Promise<any>;
+  post(url: string, data?: any, config?: any): Promise<any>;
+  put(url: string, data?: any, config?: any): Promise<any>;
+  delete(url: string, config?: any): Promise<any>;
 }
 
 export interface Router {
@@ -43,8 +43,8 @@ export interface Router {
 }
 
 export class DataCenter {
-  private api?: ApiClient;
-  private router?: Router;
+  public api?: ApiClient;
+  public router?: Router;
   private initializing = false;
 
   state = reactive({
@@ -60,7 +60,11 @@ export class DataCenter {
         username: '',
         level: 1,
         experience: 0
-      }
+      },
+      userList: [
+        { id: 1, name: 'Alice', avatar: 'https://example.com/alice.png' },
+        { id: 2, name: 'Bob', avatar: 'https://example.com/bob.png' }
+      ]
     } as DynamicData,
     mode: 'production' as 'preview' | 'production',
     loading: false,
@@ -179,6 +183,7 @@ export class DataCenter {
       }
     } else if (type === 'UPDATE_DATA_CENTER') {
       this.state.dataCenterConfig = data;
+      this.updateDynamicDataFromConfig();
     } else if (type === 'UPDATE_PAGE_DIFF') {
       // Page config update (key/value)
       if (this.state.config) {
@@ -206,6 +211,35 @@ export class DataCenter {
           }
       }
     }
+  }
+
+  updateDynamicDataFromConfig() {
+    if (!this.state.dataCenterConfig || !this.state.dataCenterConfig.fields) return;
+    
+    const mockData = this.generateMockData(this.state.dataCenterConfig.fields);
+    // Merge mock data into dynamicData
+    Object.assign(this.state.dynamicData, mockData);
+  }
+
+  private generateMockData(fields: DataField[]): any {
+    const result: any = {};
+    fields.forEach(field => {
+      if (field.mockValue !== undefined && field.mockValue !== '') {
+        result[field.key] = field.mockValue;
+      } else if (field.type === 'object' && field.children) {
+        result[field.key] = this.generateMockData(field.children);
+      } else if (field.type === 'array' && field.children) {
+        result[field.key] = [this.generateMockData(field.children)];
+      } else {
+         switch (field.type) {
+           case 'string': result[field.key] = 'text'; break;
+           case 'number': result[field.key] = 0; break;
+           case 'boolean': result[field.key] = false; break;
+           default: result[field.key] = null;
+         }
+      }
+    });
+    return result;
   }
 
   async initPage(pageId?: string) {
@@ -291,6 +325,7 @@ export class DataCenter {
       
       if (activityConfig.dataCenter) {
           this.state.dataCenterConfig = activityConfig.dataCenter;
+          this.updateDynamicDataFromConfig();
       }
       return activityConfig;
     } catch (e) {

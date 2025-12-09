@@ -1,5 +1,5 @@
 import { createVNode, render } from 'vue';
-import ToastComponent from '../components/Toast.vue';
+import ToastComponent from '../components/basic/Toast.vue';
 
 const container = document.createElement('div');
 document.body.appendChild(container);
