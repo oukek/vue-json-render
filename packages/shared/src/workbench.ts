@@ -29,36 +29,43 @@ export const componentConfigs = {
     create: createButtonConfig,
     defaultBase: defaultBaseConfig,
     defaultProps: defaultButtonProps,
+    category: 'basic',
   },
   'Text': {
     create: createTextConfig,
     defaultBase: defaultTextBase,
     defaultProps: defaultTextProps,
+    category: 'basic',
   },
   'Image': {
     create: createImageConfig,
     defaultBase: defaultImageBase,
     defaultProps: defaultImageProps,
+    category: 'basic',
   },
   'Progress': {
     create: createProgressConfig,
     defaultBase: defaultProgressBase,
     defaultProps: defaultProgressProps,
+    category: 'basic',
   },
   'Input': {
     create: createInputConfig,
     defaultBase: defaultInputBase,
     defaultProps: defaultInputProps,
+    category: 'basic',
   },
   'ListSelect': {
     create: createListSelectConfig,
     defaultBase: defaultListSelectBase,
     defaultProps: defaultListSelectProps,
+    category: 'basic',
   },
   'Login': {
     create: createLoginConfig,
     defaultBase: defaultLoginBase,
     defaultProps: defaultLoginProps,
+    category: 'business',
   },
 };
 

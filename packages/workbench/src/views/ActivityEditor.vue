@@ -216,16 +216,32 @@
           <h3>添加组件</h3>
           <button class="close-btn" @click="showComponentLibrary = false">×</button>
         </div>
-        <div class="library-grid">
-          <div 
-            class="library-item" 
-            v-for="(config, name) in componentConfigs" 
-            :key="name"
-            @click="addComponent(name)"
-          >
-            <div class="item-icon">{{ name[0] }}</div>
-            <div class="item-name">{{ name }}</div>
-          </div>
+        <div class="library-body">
+            <div class="library-sidebar">
+                <div 
+                    class="sidebar-item" 
+                    :class="{ active: libraryTab === 'basic' }"
+                    @click="libraryTab = 'basic'"
+                >基础组件</div>
+                <div 
+                    class="sidebar-item" 
+                    :class="{ active: libraryTab === 'business' }"
+                    @click="libraryTab = 'business'"
+                >业务组件</div>
+            </div>
+            <div class="library-content">
+                <div class="library-grid">
+                <div 
+                    class="library-item" 
+                    v-for="([name, config]) in currentLibraryComponents" 
+                    :key="name"
+                    @click="addComponent(name)"
+                >
+                    <div class="item-icon">{{ name[0] }}</div>
+                    <div class="item-name">{{ name }}</div>
+                </div>
+                </div>
+            </div>
         </div>
       </div>
     </div>
@@ -283,6 +299,19 @@ const currentModalIndex = ref(0);
 const editingType = ref<'page' | 'modal'>('page');
 const resourceTab = ref<'page' | 'modal'>('page');
 const selectedComponentId = ref('');
+
+const basicComponents = computed(() => {
+    return Object.entries(componentConfigs).filter(([_, config]: [string, any]) => config.category === 'basic' || !config.category);
+});
+
+const businessComponents = computed(() => {
+    return Object.entries(componentConfigs).filter(([_, config]: [string, any]) => config.category === 'business');
+});
+
+const libraryTab = ref<'basic' | 'business'>('basic');
+const currentLibraryComponents = computed(() => {
+    return libraryTab.value === 'basic' ? basicComponents.value : businessComponents.value;
+});
 
 watch(editingType, (newType) => {
     if (newType === 'page' || newType === 'modal') {
@@ -1022,13 +1051,58 @@ const handleDataSourceUpdate = (fields: DataField[]) => {
     font-size: 18px;
 }
 
-.library-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+.library-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.library-sidebar {
+    width: 140px;
+    border-right: 1px solid #e5e7eb;
+    background: #fff;
+    overflow-y: auto;
+    padding: 10px 0;
+}
+
+.sidebar-item {
+    padding: 12px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #6b7280;
+    transition: all 0.2s;
+    position: relative;
+}
+.sidebar-item:hover {
+    background: #f9fafb;
+    color: #374151;
+}
+.sidebar-item.active {
+    background: #eff6ff;
+    color: #2563eb;
+    font-weight: 500;
+}
+.sidebar-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #2563eb;
+}
+
+.library-content {
   padding: 20px;
   overflow-y: auto;
+  flex: 1;
   background: #f9fafb;
+}
+
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
 }
 
 .library-item {
